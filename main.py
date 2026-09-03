@@ -9,9 +9,8 @@ SUPABASE_URL = "https://gsizvosbufsyccybfbjp.supabase.co"
 SUPABASE_KEY = "sb_publishable_Vp-sRKSA-v9J1vZdY4PXcg__-zSV16"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 2. Malipopay Credentials
-MALIPOPAY_KEY_ID = "zCuKwFrmB-1n"
-MALIPOPAY_PUBLIC_KEY = "mp_pk_prod_U2FsdGVkX1+93j0i8/1vLvhjP+I9Gv6NH74O"
+# 2. Malipopay Credentials & Endpoint
+MALIPOPAY_API_TOKEN = "mp_pk_prod_U2FsdGVkX1+93j0i8/1vLvhjP+I9Gv6NH74O"
 MALIPOPAY_URL = "https://core-prod.malipopay.co.tz/api/v1/payment/collection"
 
 app = FastAPI()
@@ -32,17 +31,16 @@ class PaymentRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"status": "Backend na Malipopay ziko tayari!"}
+    return {"status": "Backend ipo tayari!"}
 
 
 @app.post("/pay")
 async def process_payment(payment: PaymentRequest):
-    # Malipopay inahitaji Key-Id, apiToken, na Authorization header
+    # Standard Bearer Authorization header ya Malipopay API
     headers = {
-        "X-Key-Id": MALIPOPAY_KEY_ID,
-        "apiToken": MALIPOPAY_PUBLIC_KEY,
-        "Authorization": f"Bearer {MALIPOPAY_PUBLIC_KEY}",
+        "Authorization": f"Bearer {MALIPOPAY_API_TOKEN}",
         "Content-Type": "application/json",
+        "Accept": "application/json",
     }
 
     payload = {
@@ -75,7 +73,7 @@ async def process_payment(payment: PaymentRequest):
 
                 return {
                     "success": True,
-                    "message": "Ujumbe wa kuweka PIN unatumwa kwenye simu ya mteja!",
+                    "message": "Ujumbe wa kuweka PIN unatumwa kwenye simu!",
                     "data": res_data,
                 }
             else:
@@ -89,4 +87,3 @@ async def process_payment(payment: PaymentRequest):
             raise HTTPException(
                 status_code=500, detail=f"Malipopay Connection Error: {str(e)}"
             )
-                        
