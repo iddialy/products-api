@@ -9,8 +9,9 @@ SUPABASE_URL = "https://gsizvosbufsyccybfbjp.supabase.co"
 SUPABASE_KEY = "sb_publishable_Vp-sRKSA-v9J1vZdY4PXcg__-zSV16"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 2. Malipopay Credentials & Endpoint
-MALIPOPAY_API_TOKEN = "mp_pk_prod_U2FsdGVkX1+93j0i8/1vLvhjP+I9Gv6NH74O"
+# 2. Malipopay Live Credentials
+MALIPOPAY_KEY_ID = "5NZ1iEzacdi5"
+MALIPOPAY_SECRET_KEY = "mp_sk_prod_U2FsdGVkX1/wJtS7hbttBICxjwuOyxtMrGJJQhqEQQ84xkOEYKiLVD3w2prI/NiR6CYUZZzk1Hli7hbRYg39TpIWj9HiLzWzKknQV+fZky/VnDq6yvvSFVHKYwpPb3ib2niqb5Mtk9ZwY+PP3Gmw5fjnPH0KBcACKXEkeQqdA5uj9jl/8mzA0vHF2X48Krom"
 MALIPOPAY_URL = "https://core-prod.malipopay.co.tz/api/v1/payment/collection"
 
 app = FastAPI()
@@ -36,9 +37,11 @@ def read_root():
 
 @app.post("/pay")
 async def process_payment(payment: PaymentRequest):
-    # Standard Bearer Authorization header ya Malipopay API
+    # Malipopay inatumia Secret Key kwenye Authorization Header
     headers = {
-        "Authorization": f"Bearer {MALIPOPAY_API_TOKEN}",
+        "Authorization": f"Bearer {MALIPOPAY_SECRET_KEY}",
+        "X-Key-Id": MALIPOPAY_KEY_ID,
+        "apiToken": MALIPOPAY_SECRET_KEY,
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
