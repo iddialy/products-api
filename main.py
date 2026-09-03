@@ -11,6 +11,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # 2. Malipopay Live Credentials
 MALIPOPAY_KEY_ID = "5NZ1iEzacdi5"
+MALIPOPAY_PUBLIC_KEY = "mp_pk_prod_U2FsdGVkdX1dGVkX19ZGxZzO7OPAKUCcUHP4j8yYzQrNhDkgq6hkyaJn45QPXApRCXocs5m"
 MALIPOPAY_SECRET_KEY = "mp_sk_prod_U2FsdGVkX1/wJtS7hbttBICxjwuOyxtMrGJJQhqEQQ84xkOEYKiLVD3w2prI/NiR6CYUZZzk1Hli7hbRYg39TpIWj9HiLzWzKknQV+fZky/VnDq6yvvSFVHKYwpPb3ib2niqb5Mtk9ZwY+PP3Gmw5fjnPH0KBcACKXEkeQqdA5uj9jl/8mzA0vHF2X48Krom"
 MALIPOPAY_URL = "https://core-prod.malipopay.co.tz/api/v1/payment/collection"
 
@@ -37,11 +38,13 @@ def read_root():
 
 @app.post("/pay")
 async def process_payment(payment: PaymentRequest):
-    # Malipopay inatumia Secret Key kwenye Authorization Header
+    # Weka apiToken/api-key kwa kutumia Public Key na Authorization kwa Secret Key
     headers = {
+        "apiToken": MALIPOPAY_PUBLIC_KEY,
+        "api-key": MALIPOPAY_PUBLIC_KEY,
+        "X-Api-Key": MALIPOPAY_PUBLIC_KEY,
         "Authorization": f"Bearer {MALIPOPAY_SECRET_KEY}",
         "X-Key-Id": MALIPOPAY_KEY_ID,
-        "apiToken": MALIPOPAY_SECRET_KEY,
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
