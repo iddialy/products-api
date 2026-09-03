@@ -1,19 +1,19 @@
-                
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import Client, create_client
 
+# 1. Supabase Credentials
 SUPABASE_URL = "https://gsizvosbufsyccybfbjp.supabase.co"
 SUPABASE_KEY = "sb_publishable_Vp-sRKSA-v9J1vZdY4PXcg__-zSV16"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-MALIPOPAY_KEY_ID = "zCuKwFrmB-1n"
-MALIPOPAY_PUBLIC_KEY = "mp_pk_prod_U2FsdGVkX1+93j0i8/1vLvhjP+I9Gv6NH74O"
-
-# URL iliyorekebishwa ya Malipopay API
-MALIPOPAY_URL = "https://api.malipopay.co.tz/v1/payments"
+# 2. Malipopay Credentials & Correct API Endpoint
+MALIPOPAY_PUBLIC_KEY = (
+    "mp_pk_prod_U2FsdGVkX1+93j0i8/1vLvhjP+I9Gv6NH74O"  # API Token yako
+)
+MALIPOPAY_URL = "https://core-prod.malipopay.co.tz/api/v1/payment/collection"
 
 app = FastAPI()
 
@@ -33,22 +33,24 @@ class PaymentRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"status": "Backend na Malipopay ziko tayari kazi!"}
+    return {"status": "Backend na Malipopay ziko tayari!"}
 
 
 @app.post("/pay")
 async def process_payment(payment: PaymentRequest):
+    # Format Headers kulingana na muundo wa Malipopay API
     headers = {
-        "X-Key-Id": MALIPOPAY_KEY_ID,
-        "Authorization": f"Bearer {MALIPOPAY_PUBLIC_KEY}",
+        "apiToken": MALIPOPAY_PUBLIC_KEY,
         "Content-Type": "application/json",
     }
 
+    # Format Payload kulingana na vigezo vya Malipopay API
     payload = {
-        "phone_number": payment.phone_number,
+        "reference": "ACC-SUB-PLAN",
+        "description": "Malipo ya Kifurushi cha AI Sales Assistant",
         "amount": payment.amount,
-        "currency": "TZS",
-        "description": "Malipo ya AI Sales Assistant Access",
+        "phoneNumber": payment.phone_number,
+        "amountType": "FULL",
     }
 
     async with httpx.AsyncClient() as client:
@@ -57,14 +59,16 @@ async def process_payment(payment: PaymentRequest):
                 MALIPOPAY_URL, json=payload, headers=headers, timeout=30.0
             )
 
-            if response.status_code in [200, 201]:
-                res_data = response.json()
+            res_data = response.json()
+
+            if response.status_code in [200, 201] and res_data.get("success"):
+                # Hifadhi muamala Supabase
                 supabase.table("transactions").insert(
                     {
                         "phone_number": payment.phone_number,
                         "amount": payment.amount,
                         "status": "pending",
-                        "malipopay_ref": res_data.get("transaction_id", ""),
+                        "malipopay_ref": res_data.get("reference", ""),
                     }
                 ).execute()
 
@@ -74,10 +78,13 @@ async def process_payment(payment: PaymentRequest):
                     "data": res_data,
                 }
             else:
-                raise HTTPException(
-                    status_code=response.status_code, detail=response.text
-                )
+                return {
+                    "success": False,
+                    "detail": res_data.get("message") or response.text,
+                }
         except Exception as e:
             raise HTTPException(
-                status_code=500, detail=f"Malipopay API Error: {str(e)}"
+                status_code=500, detail=f"Malipopay Connection Error: {str(e)}"
             )
+
+                
