@@ -9,7 +9,8 @@ SUPABASE_URL = "https://gsizvosbufsyccybfbjp.supabase.co"
 SUPABASE_KEY = "sb_publishable_Vp-sRKSA-v9J1vZdY4PXcg__-zSV16"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 2. Malipopay Credentials & Correct API Endpoint
+# 2. Malipopay Credentials
+MALIPOPAY_KEY_ID = "zCuKwFrmB-1n"
 MALIPOPAY_PUBLIC_KEY = "mp_pk_prod_U2FsdGVkX1+93j0i8/1vLvhjP+I9Gv6NH74O"
 MALIPOPAY_URL = "https://core-prod.malipopay.co.tz/api/v1/payment/collection"
 
@@ -36,8 +37,11 @@ def read_root():
 
 @app.post("/pay")
 async def process_payment(payment: PaymentRequest):
+    # Malipopay inahitaji Key-Id, apiToken, na Authorization header
     headers = {
+        "X-Key-Id": MALIPOPAY_KEY_ID,
         "apiToken": MALIPOPAY_PUBLIC_KEY,
+        "Authorization": f"Bearer {MALIPOPAY_PUBLIC_KEY}",
         "Content-Type": "application/json",
     }
 
@@ -57,7 +61,9 @@ async def process_payment(payment: PaymentRequest):
 
             res_data = response.json()
 
-            if response.status_code in [200, 201] and res_data.get("success"):
+            if response.status_code in [200, 201] and (
+                res_data.get("success") or res_data.get("status") == "success"
+            ):
                 supabase.table("transactions").insert(
                     {
                         "phone_number": payment.phone_number,
@@ -75,9 +81,12 @@ async def process_payment(payment: PaymentRequest):
             else:
                 return {
                     "success": False,
-                    "detail": res_data.get("message") or response.text,
+                    "detail": res_data.get("message")
+                    or res_data.get("error")
+                    or response.text,
                 }
         except Exception as e:
             raise HTTPException(
                 status_code=500, detail=f"Malipopay Connection Error: {str(e)}"
             )
+                        
